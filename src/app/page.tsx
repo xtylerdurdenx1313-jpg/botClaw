@@ -12,13 +12,15 @@ interface Agent {
   lastUpdate: string
 }
 
+const API_URL = 'https://discreditable-nonpertinently-dulcie.ngrok-free.dev'
+
 export default function Dashboard() {
   const [agents, setAgents] = useState<Agent[]>([
     { name: 'Polybit (15m Bitcoin)', status: 'OFFLINE', equity: 0, pnl: 0, positions: 0, lastUpdate: 'Loading...' },
-    { name: 'Prophet-Copier', status: 'OFFLINE', equity: 0, pnl: 0, positions: 0, lastUpdate: 'Loading...' },
-    { name: 'Prophet (Meta)', status: 'OFFLINE', equity: 0, pnl: 0, positions: 0, lastUpdate: 'Loading...' },
-    { name: 'HyperSOL (Solana)', status: 'OPERATIONAL', equity: 5007.24, pnl: 7.24, positions: 0, lastUpdate: new Date().toLocaleString() },
-    { name: 'Raydium Degen', status: 'OPERATIONAL', equity: 500, pnl: 0, positions: 0, lastUpdate: new Date().toLocaleString() },
+    { name: 'Prophet-Copier', status: 'LOADING', equity: 5012.89, pnl: 13.08, positions: 12, lastUpdate: 'Syncing...' },
+    { name: 'Prophet (Meta)', status: 'LOADING', equity: 4999.95, pnl: 0, positions: 2, lastUpdate: 'Syncing...' },
+    { name: 'HyperSOL (Solana)', status: 'LOADING', equity: 5007.24, pnl: 7.24, positions: 0, lastUpdate: 'Syncing...' },
+    { name: 'Raydium Degen', status: 'LOADING', equity: 500, pnl: 0, positions: 0, lastUpdate: 'Syncing...' },
   ])
   const [authenticated, setAuthenticated] = useState(false)
   const [password, setPassword] = useState('')
@@ -28,14 +30,41 @@ export default function Dashboard() {
     const auth = localStorage.getItem('botclaw_auth')
     if (auth === 'true') {
       setAuthenticated(true)
+      fetchAgents()
     }
   }, [])
+
+  const fetchAgents = async () => {
+    try {
+      const res = await fetch(`${API_URL}/api/agents`, {
+        headers: {
+          'ngrok-skip-browser-warning': 'true',
+        }
+      })
+      if (!res.ok) throw new Error('API failed')
+      const data = await res.json()
+      setAgents(data)
+      setLastSync(new Date())
+    } catch (error) {
+      console.error('Failed to fetch agents:', error)
+      // Agents stay with default/cached values
+    }
+  }
+
+  useEffect(() => {
+    if (authenticated) {
+      fetchAgents()
+      const interval = setInterval(fetchAgents, 5000)
+      return () => clearInterval(interval)
+    }
+  }, [authenticated])
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault()
     if (password === 'trading2026') {
       localStorage.setItem('botclaw_auth', 'true')
       setAuthenticated(true)
+      fetchAgents()
     } else {
       alert('Invalid password')
       setPassword('')
@@ -210,10 +239,12 @@ export default function Dashboard() {
                   <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold ${
                     agent.status === 'OPERATIONAL'
                       ? 'bg-emerald-900/50 text-emerald-400'
+                      : agent.status === 'LOADING'
+                      ? 'bg-blue-900/50 text-blue-400'
                       : 'bg-slate-800 text-slate-400'
                   }`}>
                     <span className={`w-2 h-2 rounded-full ${
-                      agent.status === 'OPERATIONAL' ? 'bg-emerald-400 animate-pulse' : 'bg-slate-600'
+                      agent.status === 'OPERATIONAL' ? 'bg-emerald-400 animate-pulse' : agent.status === 'LOADING' ? 'bg-blue-400 animate-pulse' : 'bg-slate-600'
                     }`}></span>
                     <span>{agent.status}</span>
                   </div>
