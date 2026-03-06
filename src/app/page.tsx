@@ -233,7 +233,7 @@ export default function Dashboard() {
                       {agent.name}
                     </h3>
                     <p className="text-slate-500 text-xs">
-                      {new Date(agent.lastUpdate).toLocaleTimeString()}
+                      {agent.lastUpdate}
                     </p>
                   </div>
                   <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-xs font-bold ${
